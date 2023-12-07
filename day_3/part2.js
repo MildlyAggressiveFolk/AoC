@@ -3,22 +3,22 @@ const fs = require("fs")
 const input = fs.readFileSync("./input.txt", "utf8")
 const inputArr = input.split("\n")
 
-const [numCoords, gearCoords] = getCoords(inputArr)
-console.log(findAndSumGearRatios(gearCoords))
+const coords = getCoords(inputArr)
+console.log(findAndSumGearRatios(...coords))
 
 /**
  * Takes array of gear coordinates and returns sum of gear ratios
  * @param {[number, number][]} gearCoords
  * @returns {number}
  */
-function findAndSumGearRatios(gearCoords) {
+function findAndSumGearRatios(numCoords, gearCoords) {
   const gearRatios = []
   for (let gearCoord of gearCoords) {
     const neighborSet = new Set()
     const [row, col] = gearCoord
     const neighbors = getNeighbors(row, col)
     for (let neighbor of neighbors) {
-      const numEntry = getNumEntry(...neighbor)
+      const numEntry = getNumEntry(...neighbor, numCoords)
       if (numEntry) {
         neighborSet.add(numEntry)
       }
@@ -51,14 +51,14 @@ function getValueFromNumCoord(numCoord) {
  * @returns {[number, number[]] | false} numCoord | false
  */
 
-function getNumEntry(row, col) {
+function getNumEntry(row, col, numCoords) {
   const numCoord = numCoords.find((entry) => entry[0] === row && entry[1].includes(col))
   if (numCoord) return numCoord
   return false
 }
 
 /**
- * Finds all neighbors of a given coordinate
+ * Returns all neighbors of a given coordinate
  * @param {number} row
  * @param {number} col
  * @returns {[number, number][]}
@@ -74,7 +74,7 @@ function getNeighbors(row, col) {
 }
 
 /**
- * Finds coordinates of all numbers and gears
+ * Returns coordinates of all numbers and gears
  * @param {string[]} lines
  * @returns {[[number, number[]][], [number, number][]]} [numCoords, gearCoords]
  */
