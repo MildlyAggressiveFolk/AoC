@@ -1,12 +1,14 @@
 const fs = require("fs")
 
 const input = fs.readFileSync("./input.txt", "utf8")
-sumPowers(input)
+
+console.log(sumPowers(input))
 
 /**
  * @param {string} input
  * @returns {number}
  */
+
 function sumPowers(input) {
   const games = input.split("\n")
   let possibleGames = 0
@@ -37,7 +39,7 @@ function sumPowers(input) {
     return acc + game.getPower()
   }, 0)
 
-  console.log(sumOfPowers)
+  return sumOfPowers
 }
 
 /**
