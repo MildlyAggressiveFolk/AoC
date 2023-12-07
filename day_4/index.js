@@ -15,11 +15,8 @@ const games = inputArr.map((line) => {
 const winCount = games.map((game) => {
   const { winningNums, playerNums } = game
   const intersection = new Set([...winningNums].filter((x) => playerNums.has(x)))
-  console.log(intersection)
   return intersection.size
 })
-
-console.log(winCount)
 
 console.log(
   winCount.reduce((a, b) => {
@@ -30,7 +27,6 @@ console.log(
         val = val * 2
       }
     }
-    console.log(val)
     return a + val
   }, 0)
 )
