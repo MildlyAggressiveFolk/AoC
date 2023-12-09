@@ -1,36 +1,60 @@
-const { log } = require("console")
-const fs = require("fs")
+const fs = require("fs");
+const { Worker } = require("worker_threads");
 
-const input = fs.readFileSync("./input.txt", "utf8")
-const inputArr = input.split("\n")
+const input = fs.readFileSync("./input.txt", "utf8");
+const inputArr = input.split("\n");
 
-const games = inputArr.map((line) => {
-  const game = line.split(":")[1].trim()
-  const [winningNumStr, playerNumStr] = game.split("|")
-  const winningNums = new Set(winningNumStr.split(" ").filter((num) => num !== ""))
-  const playerNums = new Set(playerNumStr.split(" ").filter((num) => num !== ""))
-  return { winningNums, playerNums }
-})
+const cardMap = parseInput(inputArr);
+const queue = [...cardMap.keys()];
+let cardCount = queue.length;
+const logCount = setInterval(() => console.log(cardCount, queue.length), 500);
 
-const winCount = games.map((game) => {
-  const { winningNums, playerNums } = game
-  const intersection = new Set([...winningNums].filter((x) => playerNums.has(x)))
-  console.log(intersection)
-  return intersection.size
-})
+const numWorkers = 4;
+let workers = new Set();
 
-console.log(winCount)
+for (let i = 0; i < numWorkers; i++) {
+  const worker = new Worker("./worker.js");
+  workers.add(worker);
 
-console.log(
-  winCount.reduce((a, b) => {
-    let val = 0
-    if (b >= 1) val = 1
-    if (b > 1) {
-      for (let i = 2; i <= b; i++) {
-        val = val * 2
-      }
+  worker.postMessage({ type: "setId", workerId: i });
+  worker.postMessage({ type: "init", cardMap });
+
+  worker.on("message", (message) => {
+    if (message.type === "ready") {
+      distributeTask(worker);
+    } else if (message.type === "addCards") {
+      queue.push(...message.cards);
+      cardCount += message.cards.length;
+      distributeTask(worker);
     }
-    console.log(val)
-    return a + val
-  }, 0)
-)
+  });
+}
+
+function distributeTask(worker) {
+  if (queue.length > 0 && queue.length < 100000) {
+    const taskChunk = queue.splice(0, 50);
+    worker.postMessage({ type: "newTaskChunk", taskChunk });
+  } else if (queue.length >= 100000) {
+    const taskChunk = queue.splice(0, 10000);
+    worker.postMessage({ type: "newTaskChunk", taskChunk });
+  } else {
+    worker.terminate();
+    clearInterval(logCount);
+    console.log("Result:", cardCount);
+  }
+}
+
+function parseInput(inputArr) {
+  const cardKV = inputArr.map((line, i) => {
+    const game = line.split(":")[1].trim();
+    const [winningNumStr, playerNumStr] = game.split("|");
+    const winningNums = new Set(
+      winningNumStr.split(" ").filter((num) => num !== "")
+    );
+    const playerNums = new Set(
+      playerNumStr.split(" ").filter((num) => num !== "")
+    );
+    return [i, { winningNums, playerNums }];
+  });
+  return new Map(cardKV);
+}
