@@ -9,10 +9,10 @@ parentPort.on("message", (message) => {
   if (message.type === "init") {
     cardMap = message.cardMap;
     parentPort.postMessage({ type: "ready" });
-  } else if (message.type === "newTaskChunk") {
+  } else if (message.type === "newTask") {
     queue.push(...message.taskChunk);
     while (queue.length > 0) {
-      const cardNum = queue.shift();
+      const cardNum = queue.pop();
 
       let winCount = getWinCount(cardNum);
       if (winCount === 0) continue;
@@ -30,9 +30,11 @@ parentPort.on("message", (message) => {
 
 function getWinCount(cardNum) {
   const game = cardMap.get(cardNum);
+  if (typeof game === "number") return game;
   const { winningNums, playerNums } = game;
   const intersection = new Set(
     [...winningNums].filter((x) => playerNums.has(x))
   );
+  cardMap.set(cardNum, intersection.size);
   return intersection.size;
 }

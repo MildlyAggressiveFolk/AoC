@@ -3,14 +3,18 @@ const { Worker } = require("worker_threads");
 
 const input = fs.readFileSync("./input.txt", "utf8");
 const inputArr = input.split("\n");
-
 const cardMap = parseInput(inputArr);
 const queue = [...cardMap.keys()];
+
 let cardCount = queue.length;
-const logCount = setInterval(() => console.log(cardCount, queue.length), 500);
+const logCount = setInterval(() => {
+  console.timeLog("Time");
+  console.table({ currentCardCount: cardCount, queueLength: queue.length });
+}, 500);
 
 const numWorkers = 4;
 let workers = new Set();
+console.time("Time");
 
 for (let i = 0; i < numWorkers; i++) {
   const worker = new Worker("./worker.js");
@@ -33,14 +37,20 @@ for (let i = 0; i < numWorkers; i++) {
 function distributeTask(worker) {
   if (queue.length > 0 && queue.length < 100000) {
     const taskChunk = queue.splice(0, 50);
-    worker.postMessage({ type: "newTaskChunk", taskChunk });
+    worker.postMessage({ type: "newTask", taskChunk });
   } else if (queue.length >= 100000) {
     const taskChunk = queue.splice(0, 10000);
-    worker.postMessage({ type: "newTaskChunk", taskChunk });
+    worker.postMessage({ type: "newTask", taskChunk });
   } else {
     worker.terminate();
+    workers.delete(worker);
     clearInterval(logCount);
-    console.log("Result:", cardCount);
+
+    if (workers.size === 0) {
+      console.log("Result:", cardCount, "\nTotal");
+      console.timeEnd("Time");
+      console.log(`${numWorkers} worker(s)`);
+    }
   }
 }
 
